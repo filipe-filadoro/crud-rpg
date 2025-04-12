@@ -1,94 +1,111 @@
 package com.crudRPG.crudRPG.entities;
 
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Table(name = "/personagem")
+@Table(name = "personagem")
 public class Personagem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
+
     private String nome;
-    private String nomeAventireiro; //nome fantasia
-    private String classe;
-    private String level;
-    private String listaItenMagico;
-    private String forca;
-    private String defesa;
+    private String nomeAventureiro;
 
-    public Personagem(int id, String nome, String nomeAventireiro, String classe, String level, String listaItenMagico, String forca, String defesa) {
+    @Enumerated(EnumType.STRING)
+    private ClassePersonagem classe;
+
+    private int level;
+    private int forca;
+    private int defesa;
+
+    @OneToMany(mappedBy = "personagem", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ItensMagicos> itensMagicos = new ArrayList<>();
+
+    public enum ClassePersonagem {
+        GUERREIRO, MAGO, ARQUEIRO, LADINO, BARDO
+    }
+
+    public Personagem() {}
+
+    public Personagem(Long id, String nome, String nomeAventureiro, ClassePersonagem classe, int level, int forca, int defesa) {
         this.id = id;
         this.nome = nome;
-        this.nomeAventireiro = nomeAventireiro;
+        this.nomeAventureiro = nomeAventureiro;
         this.classe = classe;
         this.level = level;
-        this.listaItenMagico = listaItenMagico;
         this.forca = forca;
         this.defesa = defesa;
     }
 
-    public int getId() {
-        return id;
+    @PrePersist
+    @PreUpdate
+    public void validarDistribuicaoDeAtributos() {
+        if (forca < 0 || defesa < 0) {
+            throw new IllegalArgumentException("Força e Defesa não podem ser valores negativos.");
+        }
+
+        if (forca + defesa > 10) {
+            throw new IllegalArgumentException("A soma de Força e Defesa deve ser no máximo 10.");
+        }
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public int calcularForcaTotal() {
+        return forca + itensMagicos.stream().mapToInt(ItensMagicos::getForca).sum();
     }
 
-    public String getNome() {
-        return nome;
+    public int calcularDefesaTotal() {
+        return defesa + itensMagicos.stream().mapToInt(ItensMagicos::getDefesa).sum();
     }
 
-    public void setNome(String nome) {
-        this.nome = nome;
+    public void equiparItemMagico(ItensMagicos novoItem) {
+        if (novoItem.getTipo() == ItensMagicos.TipoItem.AMULETO && possuiAmuletoEquipado()) {
+            throw new IllegalArgumentException("Este personagem já possui um amuleto equipado.");
+        }
+
     }
 
-    public String getNomeAventireiro() {
-        return nomeAventireiro;
+    public void removerItemMagicoPorId(Long itemId) {
+        itensMagicos.removeIf(item -> item.getId().equals(itemId));
     }
 
-    public void setNomeAventireiro(String nomeAventireiro) {
-        this.nomeAventireiro = nomeAventireiro;
+    public ItensMagicos buscarAmuletoEquipado() {
+        return itensMagicos.stream()
+                .filter(item -> item.getTipo() == ItensMagicos.TipoItem.AMULETO)
+                .findFirst()
+                .orElse(null);
     }
 
-    public String getClasse() {
-        return classe;
+    private boolean possuiAmuletoEquipado() {
+        return itensMagicos.stream()
+                .anyMatch(item -> item.getTipo() == ItensMagicos.TipoItem.AMULETO);
     }
 
-    public void setClasse(String classe) {
-        this.classe = classe;
-    }
+    // Getters e Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public String getLevel() {
-        return level;
-    }
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
 
-    public void setLevel(String level) {
-        this.level = level;
-    }
+    public String getNomeAventureiro() { return nomeAventureiro; }
+    public void setNomeAventureiro(String nomeAventureiro) { this.nomeAventureiro = nomeAventureiro; }
 
-    public String getListaItenMagico() {
-        return listaItenMagico;
-    }
+    public ClassePersonagem getClasse() { return classe; }
+    public void setClasse(ClassePersonagem classe) { this.classe = classe; }
 
-    public void setListaItenMagico(String listaItenMagico) {
-        this.listaItenMagico = listaItenMagico;
-    }
+    public int getLevel() { return level; }
+    public void setLevel(int level) { this.level = level; }
 
-    public String getForca() {
-        return forca;
-    }
+    public int getForca() { return forca; }
+    public void setForca(int forca) { this.forca = forca; }
 
-    public void setForca(String forca) {
-        this.forca = forca;
-    }
+    public int getDefesa() { return defesa; }
+    public void setDefesa(int defesa) { this.defesa = defesa; }
 
-    public String getDefesa() {
-        return defesa;
-    }
-
-    public void setDefesa(String defesa) {
-        this.defesa = defesa;
-    }
+    public List<ItensMagicos> getItensMagicos() { return itensMagicos; }
+    public void setItensMagicos(List<ItensMagicos> itensMagicos) { this.itensMagicos = itensMagicos; }
 }
