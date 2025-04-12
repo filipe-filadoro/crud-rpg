@@ -1,5 +1,6 @@
 # crud-rpg
 
+server.port = 8085
 springdoc.swagger-ui.path=/swagger-ui.html
 
 Exemplo para teste
